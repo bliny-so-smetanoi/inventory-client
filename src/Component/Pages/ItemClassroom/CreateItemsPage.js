@@ -119,7 +119,7 @@ export default function CreateItemsPage () {
                     <input id="description" value={form.description} name="description" onChange={changeHandler} className="form-input"/>
                 </div>
                 <div className="form-group2">
-                    <label htmlFor="itemNumber">{t('Item number')}</label>
+                    <label htmlFor="itemNumber">{t('Barcode')}</label>
                     <input type="text" id="itemNumber" value={form.itemNumber} name="itemNumber" onChange={changeHandler} className="form-input"/>
                 </div>
                 <div className="form-group3">

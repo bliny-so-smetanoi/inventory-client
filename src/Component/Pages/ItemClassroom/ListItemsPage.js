@@ -22,9 +22,11 @@ export default function ListItemsPage() {
     const location = useLocation()
     const [statsLoading, setStatsLoading] = useState(false)
     const [connection, setConnection] = useState(null)
+    const [categories, setCategories] = useState([])
     const [search, setSearch] = useState({
         search: ''
     })
+    const [searchByCat, setSearchByCat] = useState('')
     
     useEffect(()=>{
         return () => {
@@ -85,8 +87,12 @@ export default function ListItemsPage() {
         try {
             setStatsLoading(true)
             const data = await (await fetch('https://inventory-app-aitu.azurewebsites.net/api/classroom/stats/'+id, {method: 'GET', headers: {"Authorization": 'Bearer '+ token}})).json();
-             setStats(data)
-             setStatsLoading(false)
+
+            const categories = await (await fetch('https://inventory-app-aitu.azurewebsites.net/api/category/', {method: 'GET', headers: {"Authorization": 'Bearer '+ token}})).json();
+            setSearchByCat(categories[0].id)
+            setCategories(categories)
+            setStats(data)
+            setStatsLoading(false)
         } catch(e){}
     }, [request])
 
@@ -136,9 +142,34 @@ export default function ListItemsPage() {
             setItems(data)
         }catch(e){}
     }
+
+    const searchByCategory = async () => {
+        try{
+            
+            setIsSearching(true)
+            const data = await request('/api/item/searchbycategory/'+id+'/'+searchByCat,'GET', null, {'Authorization': 'Bearer ' + token})
+            setIsSearching(false)
+            setItems(data)
+        }catch(e){}
+    }
+
+    async function handleSearchByCategory(){
+        try {
+            if(searchByCat.length === 0){
+                return;
+            }
+            await searchByCategory();
+        } catch (e){}
+    }
+
+    function handleSearchByCatChange(e){
+        setSearchByCat(e.target.value)
+    }
+
     function handleChange(e){
         setSearch({...search, [e.target.name]: e.target.value})
     }
+
     return (
         <>
         {isViewerOpen && (
@@ -157,13 +188,12 @@ export default function ListItemsPage() {
                 <button className="list-item-button-left"><NavLink to={'/admin/listclass'}>{t('Back')}</NavLink></button>
                 <button className="list-item-button-right"><NavLink to={'/admin/createitem/' + id} >{t('Add item')}</NavLink></button>
             </div>
-            
             <div>
-            <input placeholder={t('Search by name')} className = 'list-items-input1' type={'text'} name={'search'} value={search.search} onChange={handleChange}/>
+                <button className="generate-report" onClick={generateReport}>{!loading && t('Generate report')}
+                {loading && t('Loading...')}</button>
             </div>
-            <div>
-                <button className="generate-report" onClick={generateReport}>{t('Generate report')}</button>
-            </div>
+            <div style={{display: 'flex', flexDirection: 'row', justifyContent: 'space-between'}}>
+                <div>
             <p style={{fontSize: '20px'}}>
                 {t('Quantity of items per category.')}:
             </p>
@@ -186,7 +216,29 @@ export default function ListItemsPage() {
                 {statsLoading && <tr><td>{t('Loading...')}</td></tr>}
                 {!statsLoading && stats.length === 0 && <div>{t('No information')}</div>}
             </table>
-
+            </div>
+            <div style={{display:'flex', flexDirection: 'column'}}>
+                <p>{t('Search by category')}:</p>
+                <select onChange={handleSearchByCatChange}>
+                    {statsLoading && <option>{t('Loading...')}</option>}
+                    {categories.map((x) => {
+                        return <option value={x.id}>{x.name}</option>
+                    })}
+                </select>
+                <button style={{border: '2px solid black', borderRadius: '5px', padding: '10px'}} onClick={handleSearchByCategory}>
+                    {t('Search')}
+                </button>
+                <button style={{border: '2px solid black', borderRadius: '5px', padding: '10px'}} onClick={() => {
+                    fetchItems()
+                    fetchStats()
+                }}>
+                    {t('Clear')}
+                </button>
+            </div>
+            </div>
+            <div>
+            <input placeholder={t('Search by name')} className = 'list-items-input1' type={'text'} name={'search'} value={search.search} onChange={handleChange}/>
+            </div>
             {(!loading) && <ItemsListCard setList={(data) => setList(data)} openImageViewer={(index) => openImageViewer(index)} reload={fetchItems} items={items} />}
             {(loading && !isSearching) && <div style={{minHeight: '300px'}}>{t('Loading...')}</div>}
             {isSearching &&<h2 style={{maxWidth: '600px', margin: 'auto'}}><MagnifyingGlass
